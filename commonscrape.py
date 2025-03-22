@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import re
+import time
 from typing import Dict, List, Optional, Any, Tuple, Union
 
 import pandas as pd
@@ -48,6 +49,7 @@ class FAQExtractor:
         self.app = FirecrawlApp(api_key=firecrawl_api_key)
         self.llm = self._initialize_llm(google_api_key)
         self.data_dict = self._initialize_data_dict()
+        self.notcollected = []
 
     @staticmethod
     def _initialize_data_dict() -> Dict[str, List]:
@@ -113,6 +115,8 @@ class FAQExtractor:
             return crawl_result['data'][0]['markdown']
         except Exception as e:
             logger.error(f"Failed to crawl {url}: {str(e)}")
+            self.notcollected.append(url)
+            time.sleep(30)
             return None
 
     def _create_extraction_template(self, context: str) -> str:
@@ -131,6 +135,7 @@ class FAQExtractor:
         Extract frequently asked questions (FAQs) from the given markdown or context.
         Read the markdown document from starting to end. Identify the question and you will get the answer.
         Extract each question and entire answer for the same question.
+        DO NOT include "Related Articles" sections or links to other FAQ questions in the extracted answer.
         Identify and structure the data in JSON format with the following fields:
 
         Expected output:
@@ -141,7 +146,7 @@ class FAQExtractor:
         answer: A concise response extracted from the markdown or context.
         links (if available): Any hyperlinks related to the FAQ, including the display text and URL only if available.
         
-        Ensure the extracted text remains accurate and preserves key details. If links are embedded within the answer, extract them separately in a structured format.
+        Ensure the extracted text remains accurate and preserves key details. If links are embedded within the answer, extract them separately in a structured format. Ignore or exclude any links that point to other FAQ questions or that appear in "Related Articles" sections.
 
         Examples:
         Example 1: Extracting FAQs
@@ -306,7 +311,7 @@ class FAQExtractor:
         
         return self.data_dict
 
-    def save_to_csv(self, filename: str = "extracted_duplicate_links.csv") -> None:
+    def save_to_csv(self, filename: str = "extracted_duplicate_links23.csv") -> None:
         """
         Save the extracted FAQ data to a CSV file.
 
@@ -354,7 +359,7 @@ def main():
         # Example of handling both input types
         try:
             # First try to read URLs from a CSV file
-            df = pd.read_csv(r"All_Folder\VS_Code\Scrapping_project\plattslinks - Copy.csv")
+            df = pd.read_csv(r"E:\All_Folder\VS_Code\Scrapping_project\plattslinks - Copy.csv")
             urls = df["Links"].tolist()
             logger.info(f"Found {len(urls)} URLs in input CSV file")
         except Exception as e:
