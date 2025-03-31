@@ -112,6 +112,7 @@ class FAQExtractor:
                     }
                 }
             )
+            print(crawl_result)
             return crawl_result['data'][0]['markdown']
         except Exception as e:
             logger.error(f"Failed to crawl {url}: {str(e)}")
